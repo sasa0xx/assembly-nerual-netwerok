@@ -14,7 +14,6 @@ global vector_free
 global vector_dot
 global vector_add
 
-; hello :D
 
 vector_init:
     ; Initialize a vector
