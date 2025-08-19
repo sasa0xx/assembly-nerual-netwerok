@@ -13,6 +13,7 @@ global vector_init
 global vector_free
 global vector_dot
 global vector_add
+global vector_hadamard
 
 vector_init:
     ; Initialize a vector
@@ -74,4 +75,45 @@ vector_dot:
     jmp .loop
 
 .done:
+    ret
+
+vector_hadamard:
+    ; Get the hadamard of two vectors
+    ; Arguments :
+    ;     rdi : pointer to the first vector
+    ;     rsi : pointer to the second vector
+    ; Returns :
+    ;     rax : pointer to new vector
+    ;
+    mov rcx, [rdi + vector.size]
+    sub rsp, 8
+    push rdi
+    push rsi
+    push rcx
+
+    mov rdi, rcx
+    call vector_init
+
+    pop rcx
+    pop rsi
+    pop rdi
+    mov [rsp], rax
+
+    mov rdi, [rdi + vector.data]
+    mov rsi, [rsi + vector.data]
+    mov rax, [rax + vector.data]
+.loop:
+    vmovapd ymm0, [rdi]
+    vmovapd ymm1, [rsi]
+    vmulpd ymm0, ymm0, ymm1
+    vmovapd [rax], ymm0
+
+    sub rcx, 4
+    jng .done
+    add rax, 32
+    add rdi, 32
+    add rsi, 32
+    jmp .loop
+.done:
+    pop rax
     ret

@@ -2,8 +2,8 @@
 
 extern printf
 extern vector_init
-extern vector_dot
 extern exit
+extern vector_hadamard
 
 struc vector
     .size resq 1
@@ -12,40 +12,41 @@ endstruc
 
 section .data
     align 32
-    my_data: dq 1.0, 2.0, 3.0, 4.0, 5.0
+    a: dq 1.5, 6.3, 4.9, 5.2
+    b: dq 2.3, 4.6, 9.3, 1.6
 
 section .text
 global _start
 _start:
     call printf
     db "Program started now!", 10, 0
-    mov rdi, 5
+    mov rdi, 4
     call vector_init
     mov rsi, [rax + vector.data]
-    vmovapd ymm0, [rel my_data]
+    vmovapd ymm0, [rel a]
     vmovapd [rsi], ymm0
-    movsd xmm0, [rel my_data + 4 * 8]
-    movsd [rsi + 4 * 8], xmm0
 
     push rax
-    mov rdi, 5
+    mov rdi, 4
     call vector_init
 
     mov rdi, rax
     mov rdi, [rdi + vector.data]
-    vmovapd ymm0, [rel my_data]
+    vmovapd ymm0, [rel b]
     vmovapd [rdi], ymm0
-    movsd xmm0, [rel my_data + 4 * 8]
-    movsd [rdi + 4 * 8], xmm0
 
     pop rsi
     mov rdi, rax
-    call vector_dot
+    call vector_hadamard
 
-    movq rax, xmm0
-    push rax
+    mov rax, [rax + vector.data]
+    push qword [rax + 24]
+    push qword [rax + 16]
+    push qword [rax + 8]
+    push qword [rax]
+
     call printf
-    db "Dot product : %f", 10, 0
+    db "Result Vector : [%f, %f, %f, %f]", 10, 0
 
     mov rdi, 0
     call exit
