@@ -12,7 +12,6 @@ malloc:
     ; returns:
     ;    rax - pointer to the allocated memory
     ;
-    add rdi, 8          ; store the size of the allocation in the first 8 bytes
     mov rax, 9          ; syscall number for sys_mmap
     mov rsi, rdi        ; size
     xor rdi, rdi        ; address 0 (kernel chooses the address)
@@ -25,7 +24,6 @@ malloc:
     cmp rax, -4095
     jae .error
     mov [rax], rsi      ; store the size at the beginning of the allocated memory
-    add rax, 8          ; return pointer to the memory after the size
     ret
 .error:
     mov rdi, 12         ; ENOMEM

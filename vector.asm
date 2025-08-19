@@ -14,7 +14,6 @@ global vector_free
 global vector_dot
 global vector_add
 
-
 vector_init:
     ; Initialize a vector
     ; Arguments:
@@ -22,9 +21,28 @@ vector_init:
     ; Returns:
     ;   rax - pointer to the initialized vector
     ;
+    test rdi, rdi
+    jnz .have_n
+    mov rdi, 1
+.have_n:
+    push rdi
+    add rdi, 3
+    and rdi, -4		; make sure amout of data is dividable by 4
     shl rdi, 3          ; size in bytes (8 bytes per element)
+    add rdi, 32
+
+    mov rax, rdi
+    push rax
 
     call malloc
+    pop rcx
+    sub rcx, 32
+    pop rdi
+
+    mov [rax + 0], rdi
+    add rcx, rax	; can also be seen as lea rcx, [rax + rcx]
+    mov [rax + 8], rcx
+
     ret
 
 vector_dot:
@@ -35,7 +53,9 @@ vector_dot:
     ; Returns:
     ;   xmm0 - the dot product
     ;
-    xor rcx, rcx
+    mov rcx, [rdi + vector.size]
+    mov rdi, [rdi + vector.data]
+    mov rsi, [rsi + vector.data]
     pxor xmm0, xmm0
 .loop:
     vmovapd ymm1, [rdi]
@@ -48,9 +68,10 @@ vector_dot:
     addsd xmm0, xmm1
 
     sub rcx, 4
-    jz .done
-    sub rdi, 32
-    sub rsi, 32
+    jng .done
+    add rdi, 32
+    add rsi, 32
+    jmp .loop
 
 .done:
     ret
