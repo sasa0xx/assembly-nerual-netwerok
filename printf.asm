@@ -6,9 +6,13 @@ section .rodata
     dot db '.'
     tiny dq 0.0000005
     minus_one dq -1.0
-
+    sign_mask dq 0x8000000000000000, 
+    
 section .text
     global printf
+    global print_double
+    global print_int
+
 convert:
     ; helper function
     ; returns:
@@ -34,6 +38,7 @@ print_int:
     ; arguments:
     ;    the integer to print is in rdi
     ;
+    xor r15, r15
     push rbp
     push rbx
     push rcx
@@ -46,15 +51,20 @@ print_int:
     xor rcx, rcx
 
     cmp rax, 0
-    jge .c
+    jge .c1
     neg rax
+    mov r15b, 1
 
-    mov byte [rbx], '-'
-    dec rbx
-    inc rcx
-    .c:
+.c1:
     call convert
 
+    test r15, r15
+    jz .c2
+    dec rsi
+    inc rcx
+    mov byte [rsi], '-'
+
+.c2:
     mov rax, 1
     mov rdi, 1
     mov rdx, rcx
@@ -76,6 +86,20 @@ print_double:
     push rcx
     mov rbp, rsp
 
+    sub rsp, 32
+    mov rbx, rsp
+    add rbx, 32
+
+    pxor xmm0, xmm0
+    ucomisd xmm0, xmm1
+    jb .c1
+
+    movsd xmm2, [rel minus_one]
+    mulsd xmm1, xmm2
+
+    call printf
+    db '-', 0
+.c1:
     cvttsd2si rdi, xmm1
     call print_int
 
@@ -86,16 +110,6 @@ print_double:
     syscall
 
     cvttsd2si r8, xmm1
-    test r8, r8
-    jns .continue
-    movsd xmm2, [rel minus_one]
-    mulsd xmm1, xmm2
-    
-.continue:
-    sub rsp, 32
-    mov rbx, rsp
-    add rbx, 32
-
     cvtsi2sd xmm2, r8
     subsd xmm1, xmm2  ; get the fractional part
     addsd xmm1, [rel tiny]

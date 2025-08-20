@@ -8,12 +8,52 @@ endstruc
 extern malloc
 extern free
 extern exit
+extern print_double
+extern printf
 
 global vector_init
-global vector_free
 global vector_dot
 global vector_add
 global vector_hadamard
+global vector_print
+global vector_add
+global vector_sub
+global vector_scaler
+
+vector_print:
+    ; Print a vector
+    ; Arguments:
+    ;     rdi - vector to print
+    ;
+    push rdi
+    call printf
+    db "[", 0
+    pop rdi
+    mov rcx, [rdi + vector.size]
+    mov rdi, [rdi + vector.data]
+.loop:
+    movsd xmm1, [rdi]
+    push rdi
+    push rcx
+    call print_double
+    pop rcx
+    pop rdi
+
+    add rdi, 8
+    sub rcx, 1
+    jng .end
+
+    push rcx
+    push rdi
+    call printf
+    db ",", 0
+    pop rdi
+    pop rcx
+    jmp .loop
+.end:
+    call printf
+    db "]", 0
+    ret
 
 vector_init:
     ; Initialize a vector
@@ -105,6 +145,129 @@ vector_hadamard:
 .loop:
     vmovapd ymm0, [rdi]
     vmovapd ymm1, [rsi]
+    vmulpd ymm0, ymm0, ymm1
+    vmovapd [rax], ymm0
+
+    sub rcx, 4
+    jng .done
+    add rax, 32
+    add rdi, 32
+    add rsi, 32
+    jmp .loop
+.done:
+    pop rax
+    ret
+
+
+vector_add:
+    ; Get the sum of two vectors
+    ; Arguments :
+    ;     rdi : pointer to the first vector
+    ;     rsi : pointer to the second vector
+    ; Returns :
+    ;     rax : pointer to new vector
+    ;
+    mov rcx, [rdi + vector.size]
+    sub rsp, 8
+    push rdi
+    push rsi
+    push rcx
+
+    mov rdi, rcx
+    call vector_init
+
+    pop rcx
+    pop rsi
+    pop rdi
+    mov [rsp], rax
+
+    mov rdi, [rdi + vector.data]
+    mov rsi, [rsi + vector.data]
+    mov rax, [rax + vector.data]
+.loop:
+    vmovapd ymm0, [rdi]
+    vmovapd ymm1, [rsi]
+    vaddpd ymm0, ymm0, ymm1
+    vmovapd [rax], ymm0
+
+    sub rcx, 4
+    jng .done
+    add rax, 32
+    add rdi, 32
+    add rsi, 32
+    jmp .loop
+.done:
+    pop rax
+    ret
+
+
+vector_sub:
+    ; Get the difference of two vectors
+    ; Arguments :
+    ;     rdi : pointer to the first vector
+    ;     rsi : pointer to the second vector
+    ; Returns :
+    ;     rax : pointer to new vector
+    ;
+    mov rcx, [rdi + vector.size]
+    sub rsp, 8
+    push rdi
+    push rsi
+    push rcx
+
+    mov rdi, rcx
+    call vector_init
+
+    pop rcx
+    pop rsi
+    pop rdi
+    mov [rsp], rax
+
+    mov rdi, [rdi + vector.data]
+    mov rsi, [rsi + vector.data]
+    mov rax, [rax + vector.data]
+.loop:
+    vmovapd ymm0, [rdi]
+    vmovapd ymm1, [rsi]
+    vsubpd ymm0, ymm0, ymm1
+    vmovapd [rax], ymm0
+
+    sub rcx, 4
+    jng .done
+    add rax, 32
+    add rdi, 32
+    add rsi, 32
+    jmp .loop
+.done:
+    pop rax
+    ret
+
+
+vector_scaler:
+    ; Multiply a vector by a scaler
+    ; Arguments :
+    ;     rdi : pointer to the vector
+    ;     xmm1 : the scaler
+    ; Returns :
+    ;     rax : pointer to new vector
+    ;
+    mov rcx, [rdi + vector.size]
+    sub rsp, 8
+    push rdi
+    push rcx
+
+    mov rdi, rcx
+    call vector_init
+
+    pop rcx
+    pop rdi
+    mov [rsp], rax
+
+    mov rdi, [rdi + vector.data]
+    mov rax, [rax + vector.data]
+    vbroadcastsd ymm1, xmm1
+.loop:
+    vmovapd ymm0, [rdi]
     vmulpd ymm0, ymm0, ymm1
     vmovapd [rax], ymm0
 
