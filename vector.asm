@@ -25,6 +25,8 @@ vector_print:
     ; Arguments:
     ;     rdi - vector to print
     ;
+    push rbp
+    mov rbp, rsp
     push rdi
     call printf
     db "[", 0
@@ -53,6 +55,8 @@ vector_print:
 .end:
     call printf
     db "]", 0
+    mov rsp, rbp
+    pop rbp
     ret
 
 vector_init:
